@@ -1,0 +1,90 @@
+name: C/C++ CI (Ubuntu 24.04)
+
+on:
+  push:
+    branches: [ "main", "${NUMBER}-*" ]
+  pull_request:
+    branches: [ "main", "${NUMBER}-*" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-against-installed-gempba:
+    runs-on: ${{ fromJSON(vars.RUNNER_LINUX || '["ubuntu-24.04"]') }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        multiprocessing: [ON, OFF]
+    env:
+      CC: gcc-14
+      CXX: g++-14
+      # Where to fetch the gempba source from. Defaults to the same owner as this
+      # repo so a private fork in `apdistributedsystems` pulls from
+      # `apdistributedsystems/gempba` and the upstream `rapastranac` fork pulls
+      # from `rapastranac/gempba`. Override `GEMPBA_OWNER` as a repository
+      # variable to pin to a different account (e.g. testing a private fork's
+      # examples against upstream gempba).
+      GEMPBA_OWNER: ${{ vars.GEMPBA_OWNER || github.repository_owner }}
+      GEMPBA_INSTALL_PREFIX: ${{ github.workspace }}/.gempba-install
+
+    steps:
+      # 1️⃣ Checkout this repo
+      - name: Checkout gempba-examples
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      # 2️⃣ Install build dependencies (mirror gempba's; MPI conditional)
+      - name: Setup Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake gcc-14 g++-14 make
+          sudo apt-get install -y libboost-all-dev libspdlog-dev libfmt-dev libhwloc-dev pkg-config
+          if [ "${{ matrix.multiprocessing }}" = "ON" ]; then
+            sudo apt-get install -y libopenmpi-dev
+          fi
+
+      # 3️⃣ Resolve the gempba source ref. Prefer a same-named branch in the
+      # gempba sister repo so paired API changes are picked up atomically; fall
+      # back to `main` for non-breaking PRs that don't need a paired branch.
+      - name: Resolve gempba ref
+        id: gempba_ref
+        run: |
+          BRANCH="${{ github.head_ref || github.ref_name }}"
+          if git ls-remote --exit-code --heads "https://github.com/$GEMPBA_OWNER/gempba.git" "$BRANCH" >/dev/null 2>&1; then
+            echo "ref=$BRANCH" >> "$GITHUB_OUTPUT"
+            echo "Picked sister branch '$BRANCH' from $GEMPBA_OWNER/gempba"
+          else
+            echo "ref=main" >> "$GITHUB_OUTPUT"
+            echo "Sister branch '$BRANCH' not present in $GEMPBA_OWNER/gempba; falling back to main"
+          fi
+
+      # 4️⃣ Build and install gempba into a workspace-local prefix
+      - name: Install gempba
+        run: |
+          git clone --depth 1 --branch "${{ steps.gempba_ref.outputs.ref }}" \
+            "https://github.com/$GEMPBA_OWNER/gempba.git" "$RUNNER_TEMP/gempba-src"
+          cmake -S "$RUNNER_TEMP/gempba-src" -B "$RUNNER_TEMP/gempba-build" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$GEMPBA_INSTALL_PREFIX" \
+            -DGEMPBA_BUILD_TESTS=OFF \
+            -DGEMPBA_BUILD_EXAMPLES=OFF \
+            -DGEMPBA_DEV_MODE=OFF \
+            -DGEMPBA_MULTIPROCESSING=${{ matrix.multiprocessing }}
+          cmake --build "$RUNNER_TEMP/gempba-build" --parallel $(nproc)
+          cmake --install "$RUNNER_TEMP/gempba-build"
+
+      # 5️⃣ Configure and build the example tree against the installed gempba
+      - name: Build gempba-examples
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$GEMPBA_INSTALL_PREFIX" \
+            -DGEMPBA_MULTIPROCESSING=${{ matrix.multiprocessing }}
+          cmake --build build --parallel $(nproc)
+
+      # 6️⃣ Run the smoke target so a successful link is also a successful run
+      - name: Run smoke test
+        run: ./build/bin/smoke_test
