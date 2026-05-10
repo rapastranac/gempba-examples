@@ -10,34 +10,30 @@ if (POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif ()
 
-# Pick the parallelism mode at configure time. Must match the mode the
-# installed gempba was built with — gempba ships <gempba/config.h> with the
-# baked-in value, but each example target also needs to know at configure time
-# which subdirectory to add.
-option(GEMPBA_MULTIPROCESSING "Build the multiprocessing example tree (requires a multiprocessing-enabled gempba install)" OFF)
+option(GEMPBA_MULTIPROCESSING "Build the multiprocessing example tree (requires libgempba-mpi-dev installed)" OFF)
 
-# Consume gempba via find_package; this is the whole point of hosting the
-# example tree in a sibling repo — every PR exercises the install/find_package
-# surface, not the in-tree source tree.
-#
+if (GEMPBA_MULTIPROCESSING)
+    set(_gempba_components mpi)
+else ()
+    set(_gempba_components mt)
+endif ()
+
 # Local-IDE escape hatch: if find_package can't locate an installed gempba but
 # a sibling source tree exists at ../gempba, fold it in via add_subdirectory.
 # CLion users get a one-step build/debug; CI and packaging are unaffected.
-find_package(gempba CONFIG QUIET)
+find_package(gempba CONFIG QUIET COMPONENTS ${_gempba_components})
 if (NOT gempba_FOUND)
     set(_gempba_sibling "${CMAKE_CURRENT_SOURCE_DIR}/../gempba")
     if (EXISTS "${_gempba_sibling}/CMakeLists.txt")
         message(STATUS "Installed gempba not found; using sibling source at ${_gempba_sibling}")
-        # gempba's root CMakeLists picks subproject defaults (TESTS=OFF,
-        # DEV_MODE=OFF) automatically. Mirror our MULTIPROCESSING choice so
-        # the sibling matches what the example tree expects.
         set(GEMPBA_MULTIPROCESSING ${GEMPBA_MULTIPROCESSING} CACHE BOOL "" FORCE)
         add_subdirectory("${_gempba_sibling}" "${CMAKE_BINARY_DIR}/_deps/gempba")
     else ()
-        find_package(gempba CONFIG REQUIRED)
+        find_package(gempba CONFIG REQUIRED COMPONENTS ${_gempba_components})
     endif ()
     unset(_gempba_sibling)
 endif ()
+unset(_gempba_components)
 
 # Static linking of Boost — examples use boost::serialization for task packets.
 set(Boost_USE_STATIC_LIBS ON)
