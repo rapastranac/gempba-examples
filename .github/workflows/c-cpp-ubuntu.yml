@@ -71,8 +71,8 @@ jobs:
             exit "$LS_EXIT"
           fi
 
-      # 4️⃣ Build and install gempba into a workspace-local prefix
-      - name: Install gempba
+      # 4️⃣ Clone gempba once; we'll configure two separate build dirs against it.
+      - name: Clone gempba
         run: |
           if [ -n "$GEMPBA_CROSS_REPO_TOKEN" ]; then
             GEMPBA_URL="https://x-access-token:${GEMPBA_CROSS_REPO_TOKEN}@github.com/${GEMPBA_OWNER}/gempba.git"
@@ -81,14 +81,36 @@ jobs:
           fi
           git -c http."https://github.com/".extraheader= -c credential.helper= clone --depth 1 --branch "${{ steps.gempba_ref.outputs.ref }}" \
             "$GEMPBA_URL" "$RUNNER_TEMP/gempba-src"
-          cmake -S "$RUNNER_TEMP/gempba-src" -B "$RUNNER_TEMP/gempba-build" \
+
+      # 4️⃣bis Install gempba mt (the base package). The mpi topping package
+      #       depends on the mt base for headers and the gempbaConfig.cmake
+      #       dispatcher, so the mt install always happens first — even on
+      #       the MP=ON matrix leg.
+      - name: Install gempba (mt base)
+        run: |
+          cmake -S "$RUNNER_TEMP/gempba-src" -B "$RUNNER_TEMP/gempba-build-mt" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$GEMPBA_INSTALL_PREFIX" \
             -DGEMPBA_BUILD_TESTS=OFF \
             -DGEMPBA_DEV_MODE=OFF \
-            -DGEMPBA_MULTIPROCESSING=${{ matrix.multiprocessing }}
-          cmake --build "$RUNNER_TEMP/gempba-build" --parallel $(nproc)
-          cmake --install "$RUNNER_TEMP/gempba-build"
+            -DGEMPBA_MULTIPROCESSING=OFF
+          cmake --build "$RUNNER_TEMP/gempba-build-mt" --parallel $(nproc)
+          cmake --install "$RUNNER_TEMP/gempba-build-mt"
+
+      # 4️⃣ter Layer the mpi topping on top of the mt base when the matrix
+      #       leg is MP=ON. Adds libgempba_mpi.a + gempba_mpi-targets.cmake
+      #       so find_package(gempba COMPONENTS mpi) resolves.
+      - name: Install gempba (mpi topping)
+        if: matrix.multiprocessing == 'ON'
+        run: |
+          cmake -S "$RUNNER_TEMP/gempba-src" -B "$RUNNER_TEMP/gempba-build-mpi" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$GEMPBA_INSTALL_PREFIX" \
+            -DGEMPBA_BUILD_TESTS=OFF \
+            -DGEMPBA_DEV_MODE=OFF \
+            -DGEMPBA_MULTIPROCESSING=ON
+          cmake --build "$RUNNER_TEMP/gempba-build-mpi" --parallel $(nproc)
+          cmake --install "$RUNNER_TEMP/gempba-build-mpi"
 
       # 5️⃣ Configure and build the example tree against the installed gempba
       - name: Build gempba-examples
