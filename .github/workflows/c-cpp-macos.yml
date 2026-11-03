@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-against-installed-gempba:
-    runs-on: ${{ fromJSON(vars.RUNNER_MACOS || '["macos-26"]') }}
+    runs-on: ${{ fromJSON(vars.RUNNER_MACOS_INTEL || '["macos-26-intel"]') }}
     timeout-minutes: 25
     strategy:
       fail-fast: false
