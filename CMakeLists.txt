@@ -39,6 +39,10 @@ unset(_gempba_components)
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost COMPONENTS serialization fiber REQUIRED)
 
+# The examples log with spdlog and format with fmt themselves; gempba keeps both private.
+find_package(spdlog CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+
 add_subdirectory(external)
 
 # The two example trees exercise mutually exclusive APIs: in a consumer build
