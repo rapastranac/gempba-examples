@@ -14,22 +14,6 @@
 
 using namespace std::placeholders;
 
-gempba::node_manager &initiate_node_manager(gempba::scheduler *p_scheduler, gempba::load_balancer *p_load_balancer) {
-    if (p_scheduler->rank_me() == 0) {
-        return gempba::create_node_manager(p_load_balancer, nullptr);
-    }
-    gempba::scheduler::worker *v_worker_view = &p_scheduler->worker_view();
-    return gempba::create_node_manager(p_load_balancer, v_worker_view);
-}
-
-gempba::load_balancer *initiate_load_balancer(gempba::scheduler *p_scheduler, const gempba::balancing_policy p_policy) {
-    if (p_scheduler->rank_me() == 0) {
-        return gempba::create_load_balancer(p_policy, nullptr);
-    }
-    gempba::scheduler::worker *v_worker_view = &p_scheduler->worker_view();
-    return gempba::create_load_balancer(p_policy, v_worker_view);
-}
-
 int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_per_node, int p_ntasks_per_socket, int p_threads_per_task, int p_probability, bool p_csv_append, std::string &p_filename_directory) {
 
     // NOTE: instantiated object depends on SCHEDULER_CENTRALIZED macro
@@ -38,7 +22,7 @@ int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_p
 
     int rank = v_scheduler->rank_me();
 
-    // logging in center only
+    // logging on the root only
     if (rank == 0) {
         std::cout << "USING LARGE ENCODING" << std::endl;
         std::cout << "USING CENTRALIZED STRATEGY" << std::endl << std::endl;
@@ -52,8 +36,8 @@ int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_p
         std::cout << "Filename directory : " << p_filename_directory << std::endl;
     }
 
-    gempba::load_balancer *v_load_balancer = initiate_load_balancer(v_scheduler, gempba::balancing_policy::QUASI_HORIZONTAL);
-    gempba::node_manager &v_node_manager = initiate_node_manager(v_scheduler, v_load_balancer);
+    gempba::load_balancer *v_load_balancer = gempba::create_load_balancer(gempba::balancing_policy::QUASI_HORIZONTAL, v_scheduler);
+    gempba::node_manager &v_node_manager = gempba::create_node_manager(v_load_balancer, v_scheduler);
 
     v_node_manager.set_goal(gempba::MINIMISE, gempba::score_type::I32);
     v_scheduler->set_goal(gempba::MINIMISE, gempba::score_type::I32);
@@ -96,24 +80,21 @@ int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_p
     v_scheduler->barrier();
 
     constexpr int v_runnable_id = 0;
-    if (rank == 0) {
-        gempba::scheduler::center &v_center_view = v_scheduler->center_view();
-        // center process
-        const gempba::task_packet& v_seed{v_buffer};
-        v_center_view.run(v_seed, v_runnable_id);
-    } else {
-        // worker process
-        gempba::scheduler::worker &v_worker_view = v_scheduler->worker_view();
+    if (!v_scheduler->is_root()) {
         v_node_manager.set_thread_pool_size(p_threads_per_task);
-
-        auto v_deser = create_deserializer();
-        auto v_runnable = gempba::runnables::return_none::create(v_runnable_id, v_function, v_deser);
-
-        std::map<int, std::shared_ptr<gempba::serial_runnable> > v_runnables;
-        v_runnables[v_runnable->get_id()] = v_runnable;
-
-        v_worker_view.run(v_node_manager, v_runnables);
     }
+
+    auto v_deser = create_deserializer();
+    auto v_runnable = gempba::runnables::return_none::create(v_runnable_id, v_function, v_deser);
+
+    std::map<int, std::shared_ptr<gempba::serial_runnable> > v_runnables;
+    v_runnables[v_runnable->get_id()] = v_runnable;
+
+    std::optional<gempba::task_bundle> v_seed;
+    if (v_scheduler->is_root()) {
+        v_seed.emplace(v_buffer, v_runnable_id);
+    }
+    v_scheduler->run(v_node_manager, v_runnables, std::move(v_seed));
     v_scheduler->barrier();
     // *****************************************************************************************
 
@@ -124,8 +105,7 @@ int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_p
 
     if (rank == 0) {
         // Retrieve solution
-        auto &&v_center_view = v_scheduler->center_view();
-        gempba::task_packet v_packet = v_center_view.get_result();
+        gempba::task_packet v_packet = v_scheduler->get_result();
         std::stringstream v_ss;
         v_ss.write(reinterpret_cast<const char *>(v_packet.data()), static_cast<int>(v_packet.size()));
 
