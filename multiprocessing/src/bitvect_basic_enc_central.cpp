@@ -138,7 +138,7 @@ int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_p
         std::vector<std::unique_ptr<gempba::stats> > v_stats_vector = v_scheduler->get_stats_vector();
         std::vector<std::size_t> v_received_tasks(v_world_size);
         std::vector<std::size_t> v_sent_tasks(v_world_size);
-        std::vector<std::size_t> v_total_requests(v_world_size);
+        std::vector<std::size_t> v_coordinator_messages(v_world_size);
         std::vector<std::size_t> v_total_thread_requests(v_world_size);
         std::vector<double> v_idle_times(v_world_size);
         std::vector<double> v_elapsed_times(v_world_size);
@@ -151,7 +151,7 @@ int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_p
 
             v_received_tasks[v_rank] = v_visitor->m_received_task_count;
             v_sent_tasks[v_rank] = v_visitor->m_sent_task_count;
-            v_total_requests[v_rank] = v_visitor->m_total_requested_tasks;
+            v_coordinator_messages[v_rank] = v_visitor->m_coordinator_messages_handled;
             v_total_thread_requests[v_rank] = v_visitor->m_total_thread_requests;
             v_idle_times[v_rank] = v_visitor->m_idle_time;
             v_elapsed_times[v_rank] = v_visitor->m_elapsed_time;
@@ -159,12 +159,12 @@ int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_p
 
         double v_global_cpu_idle_time = 0;
         size_t v_global_thread_request = 0;
-        size_t v_total_requests_at_center = v_total_requests[0];
+        size_t v_total_requests_at_center = v_coordinator_messages[0];
         for (int v_rank = 0; v_rank < v_world_size; ++v_rank) {
             spdlog::info("rank {}", v_rank);
             spdlog::info("  received_task_count: {}", v_received_tasks[v_rank]);
             spdlog::info("  sent_task_count: {}", v_sent_tasks[v_rank]);
-            spdlog::info("  total_requested_tasks: {}", v_total_requests[v_rank]);
+            spdlog::info("  coordinator_messages_handled: {}", v_coordinator_messages[v_rank]);
             spdlog::info("  total_thread_requests: {}", v_total_thread_requests[v_rank]);
             spdlog::info("  idle_time: {}", v_idle_times[v_rank]);
             spdlog::info("  elapsed_time: {}", v_elapsed_times[v_rank]);
