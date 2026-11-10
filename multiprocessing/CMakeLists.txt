@@ -14,7 +14,7 @@ foreach (EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     )
 
     target_link_libraries(${TARGET_NAME} PRIVATE
-            gempba::gempba
+            gempba::mpi
             example_libs
             Boost::serialization
             Boost::fiber

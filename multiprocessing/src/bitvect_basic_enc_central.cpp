@@ -8,6 +8,7 @@
 #include <spdlog/spdlog.h>
 
 #include <gempba/gempba.hpp>
+#include <gempba/mpi.hpp>
 
 #include "main.hpp"
 #include "bitvector_basic_encoding.hpp"
@@ -17,7 +18,7 @@ using namespace std::placeholders;
 int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_per_node, int p_ntasks_per_socket, int p_threads_per_task, int p_probability, bool p_csv_append, std::string &p_filename_directory) {
 
     // NOTE: instantiated object depends on SCHEDULER_CENTRALIZED macro
-    auto v_scheduler = gempba::create_scheduler(gempba::scheduler_topology::CENTRALIZED);
+    auto v_scheduler = gempba::mpi::create_scheduler(gempba::mpi::scheduler_topology::CENTRALIZED);
     v_scheduler->set_goal(gempba::MINIMISE, gempba::score_type::I32);
 
     int rank = v_scheduler->rank_me();
@@ -126,7 +127,7 @@ int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_p
         for (int v_rank = 0; v_rank < v_stats_vector.size(); ++v_rank) {
             std::unique_ptr<gempba::stats> &v_stats = v_stats_vector[v_rank];
 
-            std::unique_ptr<gempba::default_mpi_stats_visitor> v_visitor = gempba::get_default_mpi_stats_visitor();
+            std::unique_ptr<gempba::default_mpi_stats_visitor> v_visitor = gempba::mpi::get_default_mpi_stats_visitor();
             v_stats->visit(v_visitor.get());
 
             v_received_tasks[v_rank] = v_visitor->m_received_task_count;
