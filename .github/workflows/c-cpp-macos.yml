@@ -114,5 +114,11 @@ jobs:
             -DCMAKE_PREFIX_PATH="$GEMPBA_INSTALL_PREFIX;$(brew --prefix boost)" \
             -DOpenMP_CXX_FLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include" \
             -DOpenMP_CXX_LIB_NAMES="omp" \
-            -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib
+            -DOpenMP_omp_LIBRARY=$(brew --prefix libomp)/lib/libomp.dylib \
+            -DGEMPBA_EXAMPLES_STRESS_TESTS=ON
           cmake --build build --parallel $(sysctl -n hw.logicalcpu)
+
+      # 6️⃣ Stress-test multithreaded and hybrid runs, oversubscribed. Each run times out on its own after 60 s.
+      - name: Run the stress tests
+        timeout-minutes: 10
+        run: ctest --test-dir build -L stress --output-on-failure --repeat until-fail:3

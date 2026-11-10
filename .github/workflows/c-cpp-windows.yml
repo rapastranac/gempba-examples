@@ -119,5 +119,14 @@ jobs:
           WS=$(cygpath -u "$GITHUB_WORKSPACE")
           cmake -G "MSYS Makefiles" -S "$WS" -B "$WS/build" \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$GEMPBA_INSTALL_PREFIX"
+            -DCMAKE_PREFIX_PATH="$GEMPBA_INSTALL_PREFIX" \
+            -DGEMPBA_EXAMPLES_STRESS_TESTS=ON
           cmake --build "$WS/build" --parallel $(nproc)
+
+      # 6️⃣ Stress-test multithreaded and hybrid runs, oversubscribed. Each run times out on its own after 60 s.
+      - name: Run the stress tests
+        shell: msys2 {0}
+        timeout-minutes: 10
+        run: |
+          WS=$(cygpath -u "$GITHUB_WORKSPACE")
+          ctest --test-dir "$WS/build" -L stress --output-on-failure --repeat until-fail:3
