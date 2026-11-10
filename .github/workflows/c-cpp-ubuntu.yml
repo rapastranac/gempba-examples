@@ -13,10 +13,6 @@ jobs:
   build-against-installed-gempba:
     runs-on: ${{ fromJSON(vars.RUNNER_LINUX || '["ubuntu-24.04"]') }}
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        multiprocessing: [ON, OFF]
     env:
       CC: gcc-14
       CXX: g++-14
@@ -31,15 +27,13 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
-      # 2️⃣ Install dependencies; MPI only for MP=ON
+      # 2️⃣ Install dependencies, MPI included
       - name: Setup Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake gcc-14 g++-14 make
           sudo apt-get install -y libboost-all-dev libspdlog-dev libfmt-dev libhwloc-dev pkg-config
-          if [ "${{ matrix.multiprocessing }}" = "ON" ]; then
-            sudo apt-get install -y libopenmpi-dev
-          fi
+          sudo apt-get install -y libopenmpi-dev
 
       # 3️⃣ Resolve sister-repo branch (same-name, fall back to main)
       - name: Resolve gempba ref
@@ -71,7 +65,7 @@ jobs:
             exit "$LS_EXIT"
           fi
 
-      # 4️⃣ Clone gempba once; we'll configure two separate build dirs against it.
+      # 4️⃣ Clone gempba
       - name: Clone gempba
         run: |
           if [ -n "$GEMPBA_CROSS_REPO_TOKEN" ]; then
@@ -82,41 +76,21 @@ jobs:
           git -c http."https://github.com/".extraheader= -c credential.helper= clone --depth 1 --branch "${{ steps.gempba_ref.outputs.ref }}" \
             "$GEMPBA_URL" "$RUNNER_TEMP/gempba-src"
 
-      # 4️⃣bis Install gempba mt (the base package). The mpi topping package
-      #       depends on the mt base for headers and the gempbaConfig.cmake
-      #       dispatcher, so the mt install always happens first — even on
-      #       the MP=ON matrix leg.
-      - name: Install gempba (mt base)
+      # 4️⃣bis Install gempba, the core and the MPI component
+      - name: Install gempba (the core and the MPI component)
         run: |
-          cmake -S "$RUNNER_TEMP/gempba-src" -B "$RUNNER_TEMP/gempba-build-mt" \
+          cmake -S "$RUNNER_TEMP/gempba-src" -B "$RUNNER_TEMP/gempba-build" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$GEMPBA_INSTALL_PREFIX" \
             -DGEMPBA_BUILD_TESTS=OFF \
-            -DGEMPBA_DEV_MODE=OFF \
-            -DGEMPBA_MULTIPROCESSING=OFF
-          cmake --build "$RUNNER_TEMP/gempba-build-mt" --parallel $(nproc)
-          cmake --install "$RUNNER_TEMP/gempba-build-mt"
-
-      # 4️⃣ter Layer the mpi topping on top of the mt base when the matrix
-      #       leg is MP=ON. Adds libgempba_mpi.a + gempba_mpi-targets.cmake
-      #       so find_package(gempba COMPONENTS mpi) resolves.
-      - name: Install gempba (mpi topping)
-        if: matrix.multiprocessing == 'ON'
-        run: |
-          cmake -S "$RUNNER_TEMP/gempba-src" -B "$RUNNER_TEMP/gempba-build-mpi" \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="$GEMPBA_INSTALL_PREFIX" \
-            -DGEMPBA_BUILD_TESTS=OFF \
-            -DGEMPBA_DEV_MODE=OFF \
-            -DGEMPBA_MULTIPROCESSING=ON
-          cmake --build "$RUNNER_TEMP/gempba-build-mpi" --parallel $(nproc)
-          cmake --install "$RUNNER_TEMP/gempba-build-mpi"
+            -DGEMPBA_BUILD_MPI=ON
+          cmake --build "$RUNNER_TEMP/gempba-build" --parallel $(nproc)
+          cmake --install "$RUNNER_TEMP/gempba-build"
 
       # 5️⃣ Configure and build the example tree against the installed gempba
       - name: Build gempba-examples
         run: |
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$GEMPBA_INSTALL_PREFIX" \
-            -DGEMPBA_MULTIPROCESSING=${{ matrix.multiprocessing }}
+            -DCMAKE_PREFIX_PATH="$GEMPBA_INSTALL_PREFIX"
           cmake --build build --parallel $(nproc)
