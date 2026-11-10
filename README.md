@@ -47,21 +47,21 @@ So if you have `gempba` cloned next to this repo, no install step is required â€
 
 ```sh
 # Linux
-bash scripts/build_linux.sh           # Release, MP=OFF, hwloc ON
-bash scripts/build_linux.sh Debug ON  # Debug, MP=ON
+bash scripts/build_linux.sh            # Release, every example, hwloc ON
+bash scripts/build_linux.sh Debug OFF  # Debug, multithreading examples only
 
 # Windows / MSYS2
-bash scripts/build_windows.sh         # Release, MP=OFF, hwloc ON
+bash scripts/build_windows.sh         # Release, every example, hwloc ON
 ```
 
 Or skip the helpers and use cmake directly:
 
 ```sh
-cmake -S . -B .build -DGEMPBA_MULTIPROCESSING=ON
+cmake -S . -B .build
 cmake --build .build --parallel
 ```
 
-Binaries land in `bin/` â€” `multithreading_*` for `MP=OFF`, `multiprocessing_*` for `MP=ON`. The two are mutually exclusive in a single build because gempba's consumer-facing namespace is mode-selected; flip `GEMPBA_MULTIPROCESSING` and reconfigure to switch modes.
+Binaries land in `bin/`: `multithreading_*` and `multiprocessing_*`. The multiprocessing examples need gempba's MPI component; pass `-DGEMPBA_EXAMPLES_MPI=OFF` to build only the multithreading ones against gempba's core.
 
 ## License
 

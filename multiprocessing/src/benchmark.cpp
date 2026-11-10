@@ -1,6 +1,7 @@
 #include "benchmark_io.hpp"
 #include "benchmark.hpp"
 #include <gempba/gempba.hpp>
+#include <gempba/mpi.hpp>
 
 #include <iostream>
 #include <chrono>
@@ -11,7 +12,7 @@ using namespace std::chrono;
 
 int run(const benchmark_params &p_params) {
 
-    auto *v_scheduler = gempba::create_scheduler(gempba::scheduler_topology::SEMI_CENTRALIZED);
+    auto *v_scheduler = gempba::mpi::create_scheduler(gempba::mpi::scheduler_topology::SEMI_CENTRALIZED);
     v_scheduler->set_goal(gempba::MINIMISE, gempba::score_type::I32);
 
     int v_rank = v_scheduler->rank_me();
@@ -97,7 +98,7 @@ int run(const benchmark_params &p_params) {
         for (int v_rank = 0; std::cmp_less(v_rank, v_stats_vector.size()); ++v_rank) {
             std::unique_ptr<gempba::stats> &v_stats = v_stats_vector[v_rank];
 
-            std::unique_ptr<gempba::default_mpi_stats_visitor> v_visitor = gempba::get_default_mpi_stats_visitor();
+            std::unique_ptr<gempba::default_mpi_stats_visitor> v_visitor = gempba::mpi::get_default_mpi_stats_visitor();
             v_stats->visit(v_visitor.get());
 
             v_received_tasks[v_rank] = v_visitor->m_received_task_count;
