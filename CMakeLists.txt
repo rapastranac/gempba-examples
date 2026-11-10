@@ -11,6 +11,7 @@ if (POLICY CMP0167)
 endif ()
 
 option(GEMPBA_EXAMPLES_MPI "Build the multiprocessing examples too (requires gempba's MPI component, libgempba-mpi-dev)" ON)
+option(GEMPBA_EXAMPLES_STRESS_TESTS "Build the synthetic stress tests and register them with CTest" OFF)
 
 if (GEMPBA_EXAMPLES_MPI)
     set(_gempba_components mpi)
@@ -49,4 +50,9 @@ add_subdirectory(external)
 add_subdirectory(multithreading)
 if (GEMPBA_EXAMPLES_MPI)
     add_subdirectory(multiprocessing)
+endif ()
+
+if (GEMPBA_EXAMPLES_STRESS_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
 endif ()
