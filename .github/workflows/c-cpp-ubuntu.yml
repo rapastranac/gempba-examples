@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main", "${NUMBER}-*" ]
   pull_request:
-    branches: [ "main", "${NUMBER}-*" ]
+    branches: [ "main", "[0-9]+-**" ]
 
 permissions:
   contents: read
