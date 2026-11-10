@@ -18,7 +18,7 @@ Worked examples:
 
 ### Which branch
 
-The workflow first looks for a **branch with the same name** in the gempba repo. If it doesn't exist, CI falls back to `main`.
+The workflow first looks for a **branch with the same name** in the gempba repo. If it doesn't exist and the run is for a pull request, it looks for the pull request's **base branch** there. If neither exists, CI falls back to `main`.
 
 Worked examples:
 
@@ -34,6 +34,7 @@ Worked examples:
   ```
 
   CI on either PR will now find its sibling branch and build them together. After both PRs merge to `main`, delete the paired branches.
+- *Pull request into a paired branch.* You open a PR from `21-add-tests` into `414-rename-foo-to-bar`, which exists in both repos. gempba has no `21-add-tests`, so CI builds against gempba's `414-rename-foo-to-bar`. Pull requests into `main` and into numbered branches (`[0-9]+-**`) run CI.
 
 ## Build locally
 
@@ -62,6 +63,23 @@ cmake --build .build --parallel
 ```
 
 Binaries land in `bin/`: `multithreading_*` and `multiprocessing_*`. The multiprocessing examples need gempba's MPI component; pass `-DGEMPBA_EXAMPLES_MPI=OFF` to build only the multithreading ones against gempba's core.
+
+## Stress tests
+
+`tests/` holds two synthetic stress tests that need no input files. Each one walks a full binary tree and checks two answers that don't depend on how the work was split: the number of leaves (`2^depth`) and the best leaf (`2^depth - 1`). A run fails when either answer is wrong, or when it doesn't finish within 60 s.
+
+- `multithreading_leaf_visitor`: one process on the quasi-horizontal load balancer, on 2, 8 and 16 threads.
+- `multiprocessing_leaf_visitor`: MPI ranks with 2 threads each, on the semi-centralized scheduler and the quasi-horizontal load balancer, on 2, 4 and 8 ranks.
+
+They oversubscribe small machines on purpose, so that hand-offs race. With Open MPI, `--oversubscribe` is added for you.
+
+```sh
+cmake -S . -B .build -DGEMPBA_EXAMPLES_STRESS_TESTS=ON
+cmake --build .build --parallel
+ctest --test-dir .build -L stress --output-on-failure
+```
+
+Add `--repeat until-fail:20` for a longer soak.
 
 ## License
 

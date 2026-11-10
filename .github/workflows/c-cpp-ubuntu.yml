@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main", "${NUMBER}-*" ]
   pull_request:
-    branches: [ "main", "${NUMBER}-*" ]
+    branches: [ "main", "[0-9]+-**" ]
 
 permissions:
   contents: read
@@ -48,22 +48,28 @@ jobs:
           else
             GEMPBA_URL="https://github.com/${GEMPBA_OWNER}/gempba.git"
           fi
-          BRANCH="${{ github.head_ref || github.ref_name }}"
-          set +e
-          LS_OUTPUT=$(git -c http."https://github.com/".extraheader= -c credential.helper= ls-remote --exit-code --heads "$GEMPBA_URL" "$BRANCH" 2>&1)
-          LS_EXIT=$?
-          set -e
-          if [ "$LS_EXIT" = "0" ]; then
-            echo "ref=$BRANCH" >> "$GITHUB_OUTPUT"
-            echo "Picked sister branch '$BRANCH' from $GEMPBA_OWNER/gempba"
-          elif [ "$LS_EXIT" = "2" ]; then
-            echo "ref=main" >> "$GITHUB_OUTPUT"
-            echo "Sister branch '$BRANCH' not present in $GEMPBA_OWNER/gempba; falling back to main"
-          else
-            echo "::error::ls-remote against $GEMPBA_OWNER/gempba failed (exit $LS_EXIT)"
-            echo "$LS_OUTPUT"
-            exit "$LS_EXIT"
-          fi
+          # The same-named branch first, then a pull request's base branch, then main.
+          for BRANCH in "${{ github.head_ref || github.ref_name }}" "${{ github.base_ref }}"; do
+            if [ -z "$BRANCH" ]; then
+              continue
+            fi
+            set +e
+            LS_OUTPUT=$(git -c http."https://github.com/".extraheader= -c credential.helper= ls-remote --exit-code --heads "$GEMPBA_URL" "$BRANCH" 2>&1)
+            LS_EXIT=$?
+            set -e
+            if [ "$LS_EXIT" = "0" ]; then
+              echo "ref=$BRANCH" >> "$GITHUB_OUTPUT"
+              echo "Picked sister branch '$BRANCH' from $GEMPBA_OWNER/gempba"
+              exit 0
+            elif [ "$LS_EXIT" != "2" ]; then
+              echo "::error::ls-remote against $GEMPBA_OWNER/gempba failed (exit $LS_EXIT)"
+              echo "$LS_OUTPUT"
+              exit "$LS_EXIT"
+            fi
+            echo "Sister branch '$BRANCH' not present in $GEMPBA_OWNER/gempba"
+          done
+          echo "ref=main" >> "$GITHUB_OUTPUT"
+          echo "Falling back to main"
 
       # 4️⃣ Clone gempba
       - name: Clone gempba
@@ -92,5 +98,11 @@ jobs:
         run: |
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$GEMPBA_INSTALL_PREFIX"
+            -DCMAKE_PREFIX_PATH="$GEMPBA_INSTALL_PREFIX" \
+            -DGEMPBA_EXAMPLES_STRESS_TESTS=ON
           cmake --build build --parallel $(nproc)
+
+      # 6️⃣ Stress-test multithreaded and hybrid runs, oversubscribed. Each run times out on its own after 60 s.
+      - name: Run the stress tests
+        timeout-minutes: 10
+        run: ctest --test-dir build -L stress --output-on-failure --repeat until-fail:3
