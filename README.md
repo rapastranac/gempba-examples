@@ -18,7 +18,7 @@ Worked examples:
 
 ### Which branch
 
-The workflow first looks for a **branch with the same name** in the gempba repo. If it doesn't exist, CI falls back to `main`.
+The workflow first looks for a **branch with the same name** in the gempba repo. If it doesn't exist and the run is for a pull request, it looks for the pull request's **base branch** there. If neither exists, CI falls back to `main`.
 
 Worked examples:
 
@@ -34,6 +34,7 @@ Worked examples:
   ```
 
   CI on either PR will now find its sibling branch and build them together. After both PRs merge to `main`, delete the paired branches.
+- *Pull request into a paired branch.* You open a PR from `21-add-tests` into `414-rename-foo-to-bar`, which exists in both repos. gempba has no `21-add-tests`, so CI builds against gempba's `414-rename-foo-to-bar`. Pull requests into `main` and into numbered branches (`[0-9]+-**`) run CI.
 
 ## Build locally
 
