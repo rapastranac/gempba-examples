@@ -63,6 +63,23 @@ cmake --build .build --parallel
 
 Binaries land in `bin/`: `multithreading_*` and `multiprocessing_*`. The multiprocessing examples need gempba's MPI component; pass `-DGEMPBA_EXAMPLES_MPI=OFF` to build only the multithreading ones against gempba's core.
 
+## Stress tests
+
+`tests/` holds two synthetic stress tests that need no input files. Each one walks a full binary tree and checks two answers that don't depend on how the work was split: the number of leaves (`2^depth`) and the best leaf (`2^depth - 1`). A run fails when either answer is wrong, or when it doesn't finish within 60 s.
+
+- `multithreading_leaf_visitor`: one process on the quasi-horizontal load balancer, on 2, 8 and 16 threads.
+- `multiprocessing_leaf_visitor`: MPI ranks with 2 threads each, on the semi-centralized scheduler and the quasi-horizontal load balancer, on 2, 4 and 8 ranks.
+
+They oversubscribe small machines on purpose, so that hand-offs race. With Open MPI, `--oversubscribe` is added for you.
+
+```sh
+cmake -S . -B .build -DGEMPBA_EXAMPLES_STRESS_TESTS=ON
+cmake --build .build --parallel
+ctest --test-dir .build -L stress --output-on-failure
+```
+
+Add `--repeat until-fail:20` for a longer soak.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
