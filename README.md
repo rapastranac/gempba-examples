@@ -64,6 +64,19 @@ cmake --build .build --parallel
 
 Binaries land in `bin/`: `multithreading_*` and `multiprocessing_*`. The multiprocessing examples need gempba's MPI component; pass `-DGEMPBA_EXAMPLES_MPI=OFF` to build only the multithreading ones against gempba's core.
 
+## Run on a cluster
+
+`cluster/` builds `multiprocessing_benchmark` against a Slurm cluster's own MPI and runs it across nodes. Check out gempba next to this repository, then on a login node:
+
+```sh
+bash cluster/build.sh               # fmt, spdlog and hwloc from gempba's build_deps.sh, then the benchmark
+sbatch cluster/benchmark.sbatch     # after setting its --account
+```
+
+- `cluster/modules.sh` holds the modules both load, set for the Digital Research Alliance of Canada clusters; change it for another cluster.
+- The job runs 6 nodes x 2 ranks x 2 threads at depth 26; each extra level of `-max_depth` doubles the work.
+- Its output goes to `report/` and `errors/`. Each rank logs `mca_pml_ucx_init` when Open MPI runs over UCX.
+
 ## Stress tests
 
 `tests/` holds two synthetic stress tests that need no input files. Each one walks a full binary tree and checks two answers that don't depend on how the work was split: the number of leaves (`2^depth`) and the best leaf (`2^depth - 1`). A run fails when either answer is wrong, or when it doesn't finish within 60 s.

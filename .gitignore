@@ -29,3 +29,5 @@ global.cbp
 # ─── Dependencies ────────────────────────────────────────────────────────────
 external/
 !external/CMakeLists.txt
+report/
+errors/
