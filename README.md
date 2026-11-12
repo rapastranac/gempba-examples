@@ -75,6 +75,7 @@ sbatch cluster/benchmark.sbatch     # after setting its --account
 
 - `cluster/modules.sh` holds the modules both load, set for the Digital Research Alliance of Canada clusters; change it for another cluster.
 - The job runs 6 nodes x 2 ranks x 2 threads at depth 26; each extra level of `-max_depth` doubles the work.
+- Rank 0 serves telemetry on port 9001, set with `-telemetry_port` (default 9000). The Java `synthetic_void` job in gempba-java-examples serves on 9000, so the two jobs can share a node.
 - Its output goes to `report/` and `errors/`. Each rank logs `mca_pml_ucx_init` when Open MPI runs over UCX.
 
 ## Stress tests

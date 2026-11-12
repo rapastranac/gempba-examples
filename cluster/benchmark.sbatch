@@ -28,6 +28,7 @@ args=(
     -ntasks_per_socket -1
     -cpus_per_task     "$SLURM_CPUS_PER_TASK"
     -max_depth         26
+    -telemetry_port    9001
     -csv               true
     -I                 Unused
 )

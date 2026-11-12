@@ -12,6 +12,8 @@ using namespace std::chrono;
 
 int run(const benchmark_params &p_params) {
 
+    gempba::telemetry::configure_port(static_cast<std::uint16_t>(p_params.telemetry_port));
+
     auto *v_scheduler = gempba::mpi::create_scheduler(gempba::mpi::scheduler_topology::SEMI_CENTRALIZED);
     v_scheduler->set_goal(gempba::MINIMISE, gempba::score_type::I32);
 
