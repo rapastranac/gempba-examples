@@ -64,6 +64,20 @@ cmake --build .build --parallel
 
 Binaries land in `bin/`: `multithreading_*` and `multiprocessing_*`. The multiprocessing examples need gempba's MPI component; pass `-DGEMPBA_EXAMPLES_MPI=OFF` to build only the multithreading ones against gempba's core.
 
+## Run locally
+
+`scripts/` runs the examples, with the options set at the top of each script: `run` for the bitvect and graph examples, `run_benchmark` for the benchmarks, and `run_folder` for every graph in a folder, as `.sh` (`mpirun`) and `.ps1` (`mpiexec`).
+
+Every example serves telemetry on port 9000 unless it gets `-telemetry_port <n>`. The scripts pass `TELEMETRY_PORT` from the environment, so two runs can share a machine:
+
+```sh
+TELEMETRY_PORT=9001 bash scripts/run_benchmark.sh
+```
+
+```powershell
+$env:TELEMETRY_PORT = 9001; .\scripts\run_benchmark.ps1
+```
+
 ## Run on a cluster
 
 `cluster/` builds `multiprocessing_benchmark` against a Slurm cluster's own MPI and runs it across nodes. Check out gempba next to this repository, then on a login node:
