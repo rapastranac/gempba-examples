@@ -168,6 +168,8 @@ int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_p
 int main(int argc, char *argv[]) {
     Params params = parse(argc, argv);
 
+    gempba::telemetry::configure_port(static_cast<std::uint16_t>(params.telemetry_port));
+
     std::string job_name = params.job_name;
     int job_id = params.job_id;
     int nodes = params.nodes;

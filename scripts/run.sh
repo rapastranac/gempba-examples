@@ -13,6 +13,7 @@ TASKS_PER_SOCKET=-1     # SLURM,
 CPUS_PER_TASK=2         # SLURM, this is the number of cores per process
 CSV="true"              # Append results summary to CSV file
 GRAPH_FILE=data/prob_4/400/00400_1
+TELEMETRY_PORT=${TELEMETRY_PORT:-9000}  # Rank 0's telemetry port; TELEMETRY_PORT in the environment overrides it
 
 # ---------------------- Argument construction -------------------------
 # NOTE:
@@ -27,6 +28,7 @@ args=(
     "-ntasks_per_socket" "$TASKS_PER_SOCKET"
     "-cpus_per_task"     "$CPUS_PER_TASK"
     "-csv"               "$CSV"
+    "-telemetry_port"    "$TELEMETRY_PORT"
     "-I"                 "$GRAPH_FILE"
 )
 

@@ -11,6 +11,7 @@ NODES=-1
 TASKS_PER_NODE=5
 TASKS_PER_SOCKET=-1
 CPUS_PER_TASK=2
+TELEMETRY_PORT=${TELEMETRY_PORT:-9000}  # Rank 0's telemetry port; TELEMETRY_PORT in the environment overrides it
 
 # ---------------------- Input directory -------------------------------
 GRAPH_DIR="data/prob_4/100"
@@ -39,6 +40,7 @@ for file in "${GRAPH_FILES[@]}"; do
         "-ntasks_per_socket" "$TASKS_PER_SOCKET"
         "-cpus_per_task"     "$CPUS_PER_TASK"
         "-csv"               "true"
+        "-telemetry_port"    "$TELEMETRY_PORT"
         "-I"                 "$file"
     )
 

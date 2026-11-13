@@ -28,6 +28,8 @@ int run(int job_id, int ntasks_per_node, int prob, string &filename) {
 int main(int argc, char *argv[]) {
     Params params = parse(argc, argv);
 
+    gempba::telemetry::configure_port(static_cast<std::uint16_t>(params.telemetry_port));
+
     int job_id = params.job_id;
     int thread_per_task = params.cpus_per_task;
     int prob = params.prob;

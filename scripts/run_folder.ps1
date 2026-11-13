@@ -10,6 +10,7 @@ $NODES             = -1
 $TASKS_PER_NODE    = 6
 $TASKS_PER_SOCKET  = -1
 $CPUS_PER_TASK     = 4
+$TELEMETRY_PORT = if ($env:TELEMETRY_PORT) { $env:TELEMETRY_PORT } else { 9000 }  # Rank 0's telemetry port; $env:TELEMETRY_PORT overrides it
 
 # ---------------------- Input directory -------------------------------
 # Directory where all graph files are located
@@ -40,6 +41,7 @@ foreach ($file in $GRAPH_FILES) {
         "-ntasks_per_socket", "$TASKS_PER_SOCKET"
         "-cpus_per_task", "$CPUS_PER_TASK"
         "-csv", "true"
+        "-telemetry_port", "$TELEMETRY_PORT"
         "-I", "$($file.FullName)"
     )
 
