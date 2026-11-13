@@ -14,6 +14,7 @@ CPUS_PER_TASK=2         # SLURM, this is the number of cores per process
 CSV="true"              # Append results summary to CSV file
 GRAPH_FILE=data/prob_4/400/00400_1
 TELEMETRY_PORT=${TELEMETRY_PORT:-9000}  # Rank 0's telemetry port; TELEMETRY_PORT in the environment overrides it
+export GEMPBA_STOP_TOKEN=${GEMPBA_STOP_TOKEN:-s3cret}  # The token the dashboard's Stop asks for; GEMPBA_STOP_TOKEN in the environment overrides it
 
 # ---------------------- Argument construction -------------------------
 # NOTE:

@@ -15,6 +15,7 @@ MAX_DEPTH=10            # Maximum search depth
 CSV_APPEND=true         # Append to existing CSV file
 DIR_NAME=Unused
 TELEMETRY_PORT=${TELEMETRY_PORT:-9000}  # Rank 0's telemetry port; TELEMETRY_PORT in the environment overrides it
+export GEMPBA_STOP_TOKEN=${GEMPBA_STOP_TOKEN:-s3cret}  # The token the dashboard's Stop asks for; GEMPBA_STOP_TOKEN in the environment overrides it
 
 # ---------------------- Argument construction -------------------------
 # NOTE:
