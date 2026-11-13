@@ -34,7 +34,7 @@ Worked examples:
   ```
 
   CI on either PR will now find its sibling branch and build them together. After both PRs merge to `main`, delete the paired branches.
-- *Pull request into a paired branch.* You open a PR from `21-add-tests` into `414-rename-foo-to-bar`, which exists in both repos. gempba has no `21-add-tests`, so CI builds against gempba's `414-rename-foo-to-bar`. Pull requests into `main` and into numbered branches (`[0-9]+-**`) run CI.
+- *Pull request into a paired branch.* You open a PR from `21-add-tests` into `414-rename-foo-to-bar`, which exists in both repos. gempba has no `21-add-tests`, so CI builds against gempba's `414-rename-foo-to-bar`. Pull requests into `main` and into numbered branches (`[0-9]+-**`) run CI. macOS runs on hosted Apple Silicon minutes, so it runs only for pull requests into `main` and by hand: `gh workflow run c-cpp-macos.yml --ref <branch>`.
 
 ## Build locally
 
