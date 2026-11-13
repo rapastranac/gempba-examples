@@ -12,6 +12,7 @@ $TASKS_PER_SOCKET = -1      # SLURM tasks per socket
 $CPUS_PER_TASK = 4          # SLURM CPUs per task
 $GRAPH_FILE = "data/prob_4/400/00400_1"
 $TELEMETRY_PORT = if ($env:TELEMETRY_PORT) { $env:TELEMETRY_PORT } else { 9000 }  # Rank 0's telemetry port; $env:TELEMETRY_PORT overrides it
+$env:GEMPBA_STOP_TOKEN = if ($env:GEMPBA_STOP_TOKEN) { $env:GEMPBA_STOP_TOKEN } else { 's3cret' }  # The token the dashboard's Stop asks for; $env:GEMPBA_STOP_TOKEN overrides it
 
 # From the following args variable, only CPUS_PER_TASK is used by the project
 # Put arguments in an array — each element is one argument

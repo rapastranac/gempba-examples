@@ -78,6 +78,8 @@ TELEMETRY_PORT=9001 bash scripts/run_benchmark.sh
 $env:TELEMETRY_PORT = 9001; .\scripts\run_benchmark.ps1
 ```
 
+The scripts also start every run with the stop token `s3cret`, the one the dashboard's **Stop the run** asks for. Type `s3cret` there, and the run stops and still reports its best result so far. To use your own token, set `GEMPBA_STOP_TOKEN` before running a script, as with `TELEMETRY_PORT`.
+
 ## Run on a cluster
 
 `cluster/` builds `multiprocessing_benchmark` against a Slurm cluster's own MPI and runs it across nodes. Check out gempba next to this repository, then on a login node:
@@ -89,6 +91,7 @@ sbatch cluster/benchmark.sbatch     # after setting its --account
 
 - `cluster/modules.sh` holds the modules both load, set for the Digital Research Alliance of Canada clusters; change it for another cluster.
 - The job runs 6 nodes x 2 ranks x 2 threads at depth 26; each extra level of `-max_depth` doubles the work.
+- The job starts the run with the stop token `s3cret`, the one the dashboard's **Stop the run** asks for.
 - Rank 0 serves telemetry on port 9001, set with `-telemetry_port` (default 9000). The Java `synthetic_void` job in gempba-java-examples serves on 9000, so the two jobs can share a node.
 - Its output goes to `report/` and `errors/`. Each rank logs `mca_pml_ucx_init` when Open MPI runs over UCX.
 

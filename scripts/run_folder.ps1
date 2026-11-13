@@ -11,6 +11,7 @@ $TASKS_PER_NODE    = 6
 $TASKS_PER_SOCKET  = -1
 $CPUS_PER_TASK     = 4
 $TELEMETRY_PORT = if ($env:TELEMETRY_PORT) { $env:TELEMETRY_PORT } else { 9000 }  # Rank 0's telemetry port; $env:TELEMETRY_PORT overrides it
+$env:GEMPBA_STOP_TOKEN = if ($env:GEMPBA_STOP_TOKEN) { $env:GEMPBA_STOP_TOKEN } else { 's3cret' }  # The token the dashboard's Stop asks for; $env:GEMPBA_STOP_TOKEN overrides it
 
 # ---------------------- Input directory -------------------------------
 # Directory where all graph files are located

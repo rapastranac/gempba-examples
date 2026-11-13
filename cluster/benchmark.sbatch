@@ -33,6 +33,8 @@ args=(
     -I                 Unused
 )
 
+export GEMPBA_STOP_TOKEN=${GEMPBA_STOP_TOKEN:-s3cret}  # The token the dashboard's Stop asks for; GEMPBA_STOP_TOKEN in the environment overrides it
+
 echo "Starting run at: $(date)"
 srun ./bin/multiprocessing_benchmark "${args[@]}"
 echo "Finishing run at: $(date)"
