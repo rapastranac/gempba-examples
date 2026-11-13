@@ -25,6 +25,8 @@ int run(const int p_num_threads, const int p_probability, const std::string &fil
 int main(int argc, char *argv[]) {
     Params params = parse(argc, argv);
 
+    gempba::telemetry::configure_port(static_cast<std::uint16_t>(params.telemetry_port));
+
     int thread_per_task = params.cpus_per_task;
     int prob = params.prob;
     auto filename = params.filename;
