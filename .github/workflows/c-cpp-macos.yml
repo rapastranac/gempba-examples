@@ -2,16 +2,18 @@ name: C/C++ CI (macOS 26)
 
 on:
   push:
-    branches: [ "main", "${NUMBER}-*" ]
+    branches: [ "main" ]
+  # Hosted macOS minutes are scarce, so only PRs into main run it.
   pull_request:
-    branches: [ "main", "[0-9]+-**" ]
+    branches: [ "main" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   build-against-installed-gempba:
-    runs-on: ${{ fromJSON(vars.RUNNER_MACOS_INTEL || '["macos-26-intel"]') }}
+    runs-on: ${{ fromJSON(vars.RUNNER_MACOS_ARM64 || '["macos-26"]') }}
     timeout-minutes: 25
     env:
       GEMPBA_OWNER: ${{ vars.GEMPBA_OWNER || github.repository_owner }}
