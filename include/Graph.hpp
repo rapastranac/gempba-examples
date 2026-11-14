@@ -1,11 +1,7 @@
 #ifndef GRAPH_HPP
 #define GRAPH_HPP
 
-#include <gempba/config.h>
-
 using namespace std;
-
-#if GEMPBA_MULTIPROCESSING
 
 //#include <cereal/types/map.hpp>
 //#include <cereal/types/set.hpp>
@@ -17,13 +13,9 @@ using namespace std;
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/access.hpp>
 
-#else
-
 #include <map>
 #include <set>
 #include <vector>
-
-#endif
 
 #include "util.hpp"
 
@@ -37,12 +29,8 @@ using namespace std;
 
 class Graph {
 private:
-    #if GEMPBA_MULTIPROCESSING
-
     //friend class cereal::access;
     friend class boost::serialization::access;
-
-    #endif
 
     struct FoldedVertices {
         int u{-1};
@@ -62,7 +50,6 @@ private:
             this->w = w;
         }
 
-        #if GEMPBA_MULTIPROCESSING
         // cereal
         //template <class Archive>
         //void serialize(Archive &ar, const unsigned int version)
@@ -78,7 +65,6 @@ private:
             ar & w;
         }
 
-        #endif
     };
 
     void _addRowToList(int vec0) {
@@ -1067,7 +1053,6 @@ public:
     //Graph &operator=(const Graph &) = default;
     //Graph &operator=(Graph &&) = default;
     //virtual ~Graph() = default;
-    #if GEMPBA_MULTIPROCESSING
     /*
     template <class Archive>
     void serialize(Archive &ar)
@@ -1102,7 +1087,6 @@ public:
         ar &numEdges;
         ar &numVertices;
     }*/
-    #endif
 
     std::map<int, std::set<int> > adj; /*Adjacency list*/
 

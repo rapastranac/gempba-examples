@@ -7,6 +7,7 @@
 #include <thread>
 
 #include <gempba/gempba.hpp>
+#include <gempba/mpi.hpp>
 
 // --- Configuration ----------------------------------------------------------
 constexpr int INTERNAL_COST_US = 80; // Cost per internal node (argument prep)

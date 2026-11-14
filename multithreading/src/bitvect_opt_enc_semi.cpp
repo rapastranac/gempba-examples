@@ -75,7 +75,9 @@ int run(const std::string& p_job_name, int p_job_id, int p_nodes, int p_ntasks_p
 }
 
 int main(const int argc, char *argv[]) {
-    const auto [job_name, job_id, nodes, ntasks_per_node, ntasks_per_socket, cpus_per_task, prob,csv_append, filename] = parse(argc, argv);
+    const auto [job_name, job_id, nodes, ntasks_per_node, ntasks_per_socket, cpus_per_task, prob,csv_append, filename, telemetry_port] = parse(argc, argv);
+
+    gempba::telemetry::configure_port(static_cast<std::uint16_t>(telemetry_port));
 
     return run(job_name, job_id, nodes, ntasks_per_node, ntasks_per_socket, cpus_per_task, prob,csv_append, filename);
 }

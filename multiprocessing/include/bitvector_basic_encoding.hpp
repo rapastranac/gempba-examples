@@ -6,6 +6,7 @@
 #include <functional>
 #include <map>
 #include <gempba/gempba.hpp>
+#include <gempba/mpi.hpp>
 #include <spdlog/spdlog.h>
 
 #include "VertexCover.hpp"

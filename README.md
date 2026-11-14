@@ -18,7 +18,7 @@ Worked examples:
 
 ### Which branch
 
-The workflow first looks for a **branch with the same name** in the gempba repo. If it doesn't exist, CI falls back to `main`.
+The workflow first looks for a **branch with the same name** in the gempba repo. If it doesn't exist and the run is for a pull request, it looks for the pull request's **base branch** there. If neither exists, CI falls back to `main`.
 
 Worked examples:
 
@@ -34,6 +34,7 @@ Worked examples:
   ```
 
   CI on either PR will now find its sibling branch and build them together. After both PRs merge to `main`, delete the paired branches.
+- *Pull request into a paired branch.* You open a PR from `21-add-tests` into `414-rename-foo-to-bar`, which exists in both repos. gempba has no `21-add-tests`, so CI builds against gempba's `414-rename-foo-to-bar`. Pull requests into `main` and into numbered branches (`[0-9]+-**`) run CI. macOS runs on hosted Apple Silicon minutes, so it runs only for pull requests into `main` and by hand: `gh workflow run c-cpp-macos.yml --ref <branch>`.
 
 ## Build locally
 
@@ -47,21 +48,69 @@ So if you have `gempba` cloned next to this repo, no install step is required â€
 
 ```sh
 # Linux
-bash scripts/build_linux.sh           # Release, MP=OFF, hwloc ON
-bash scripts/build_linux.sh Debug ON  # Debug, MP=ON
+bash scripts/build_linux.sh            # Release, every example, hwloc ON
+bash scripts/build_linux.sh Debug OFF  # Debug, multithreading examples only
 
 # Windows / MSYS2
-bash scripts/build_windows.sh         # Release, MP=OFF, hwloc ON
+bash scripts/build_windows.sh         # Release, every example, hwloc ON
 ```
 
 Or skip the helpers and use cmake directly:
 
 ```sh
-cmake -S . -B .build -DGEMPBA_MULTIPROCESSING=ON
+cmake -S . -B .build
 cmake --build .build --parallel
 ```
 
-Binaries land in `bin/` â€” `multithreading_*` for `MP=OFF`, `multiprocessing_*` for `MP=ON`. The two are mutually exclusive in a single build because gempba's consumer-facing namespace is mode-selected; flip `GEMPBA_MULTIPROCESSING` and reconfigure to switch modes.
+Binaries land in `bin/`: `multithreading_*` and `multiprocessing_*`. The multiprocessing examples need gempba's MPI component; pass `-DGEMPBA_EXAMPLES_MPI=OFF` to build only the multithreading ones against gempba's core.
+
+## Run locally
+
+`scripts/` runs the examples, with the options set at the top of each script: `run` for the bitvect and graph examples, `run_benchmark` for the benchmarks, and `run_folder` for every graph in a folder, as `.sh` (`mpirun`) and `.ps1` (`mpiexec`).
+
+Every example serves telemetry on port 9000 unless it gets `-telemetry_port <n>`. The scripts pass `TELEMETRY_PORT` from the environment, so two runs can share a machine:
+
+```sh
+TELEMETRY_PORT=9001 bash scripts/run_benchmark.sh
+```
+
+```powershell
+$env:TELEMETRY_PORT = 9001; .\scripts\run_benchmark.ps1
+```
+
+The scripts also start every run with the stop token `s3cret`, the one the dashboard's **Stop the run** asks for. Type `s3cret` there, and the run stops and still reports its best result so far. To use your own token, set `GEMPBA_STOP_TOKEN` before running a script, as with `TELEMETRY_PORT`.
+
+## Run on a cluster
+
+`cluster/` builds `multiprocessing_benchmark` against a Slurm cluster's own MPI and runs it across nodes. Check out gempba next to this repository, then on a login node:
+
+```sh
+bash cluster/build.sh               # fmt, spdlog and hwloc from gempba's build_deps.sh, then the benchmark
+sbatch cluster/benchmark.sbatch     # after setting its --account
+```
+
+- `cluster/modules.sh` holds the modules both load, set for the Digital Research Alliance of Canada clusters; change it for another cluster.
+- The job runs 6 nodes x 2 ranks x 2 threads at depth 26; each extra level of `-max_depth` doubles the work.
+- The job starts the run with the stop token `s3cret`, the one the dashboard's **Stop the run** asks for.
+- Rank 0 serves telemetry on port 9001, set with `-telemetry_port` (default 9000). The Java `synthetic_void` job in gempba-java-examples serves on 9000, so the two jobs can share a node.
+- Its output goes to `report/` and `errors/`. Each rank logs `mca_pml_ucx_init` when Open MPI runs over UCX.
+
+## Stress tests
+
+`tests/` holds two synthetic stress tests that need no input files. Each one walks a full binary tree and checks two answers that don't depend on how the work was split: the number of leaves (`2^depth`) and the best leaf (`2^depth - 1`). A run fails when either answer is wrong, or when it doesn't finish within 60 s.
+
+- `multithreading_leaf_visitor`: one process on the quasi-horizontal load balancer, on 2, 8 and 16 threads.
+- `multiprocessing_leaf_visitor`: MPI ranks with 2 threads each, on the semi-centralized scheduler and the quasi-horizontal load balancer, on 2, 4 and 8 ranks.
+
+They oversubscribe small machines on purpose, so that hand-offs race. With Open MPI, `--oversubscribe` is added for you.
+
+```sh
+cmake -S . -B .build -DGEMPBA_EXAMPLES_STRESS_TESTS=ON
+cmake --build .build --parallel
+ctest --test-dir .build -L stress --output-on-failure
+```
+
+Add `--repeat until-fail:20` for a longer soak.
 
 ## License
 

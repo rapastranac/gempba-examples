@@ -11,6 +11,7 @@
 #include <spdlog/spdlog.h>
 
 #include <gempba/gempba.hpp>
+#include <gempba/mpi.hpp>
 #include <gempba/core/node.hpp>
 #include <gempba/utils/task_packet.hpp>
 

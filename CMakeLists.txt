@@ -10,12 +10,13 @@ if (POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif ()
 
-option(GEMPBA_MULTIPROCESSING "Build the multiprocessing example tree (requires libgempba-mpi-dev installed)" OFF)
+option(GEMPBA_EXAMPLES_MPI "Build the multiprocessing examples too (requires gempba's MPI component, libgempba-mpi-dev)" ON)
+option(GEMPBA_EXAMPLES_STRESS_TESTS "Build the synthetic stress tests and register them with CTest" OFF)
 
-if (GEMPBA_MULTIPROCESSING)
+if (GEMPBA_EXAMPLES_MPI)
     set(_gempba_components mpi)
 else ()
-    set(_gempba_components mt)
+    set(_gempba_components)
 endif ()
 
 # Local-IDE escape hatch: if find_package can't locate an installed gempba but
@@ -26,7 +27,7 @@ if (NOT gempba_FOUND)
     set(_gempba_sibling "${CMAKE_CURRENT_SOURCE_DIR}/../gempba")
     if (EXISTS "${_gempba_sibling}/CMakeLists.txt")
         message(STATUS "Installed gempba not found; using sibling source at ${_gempba_sibling}")
-        set(GEMPBA_MULTIPROCESSING ${GEMPBA_MULTIPROCESSING} CACHE BOOL "" FORCE)
+        set(GEMPBA_BUILD_MPI ${GEMPBA_EXAMPLES_MPI} CACHE BOOL "" FORCE)
         add_subdirectory("${_gempba_sibling}" "${CMAKE_BINARY_DIR}/_deps/gempba")
     else ()
         find_package(gempba CONFIG REQUIRED COMPONENTS ${_gempba_components})
@@ -39,14 +40,19 @@ unset(_gempba_components)
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost COMPONENTS serialization fiber REQUIRED)
 
+# The examples log with spdlog and format with fmt themselves; gempba keeps both private.
+find_package(spdlog CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+
 add_subdirectory(external)
 
-# The two example trees exercise mutually exclusive APIs: in a consumer build
-# the inactive namespace is hidden, so multithreading/ examples only compile
-# against an MP=OFF gempba and multiprocessing/ examples only compile against
-# an MP=ON gempba. Pick the tree that matches the gempba install.
-if (GEMPBA_MULTIPROCESSING)
+# The multithreading examples need gempba's core, the multiprocessing ones its MPI component too.
+add_subdirectory(multithreading)
+if (GEMPBA_EXAMPLES_MPI)
     add_subdirectory(multiprocessing)
-else ()
-    add_subdirectory(multithreading)
+endif ()
+
+if (GEMPBA_EXAMPLES_STRESS_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
 endif ()

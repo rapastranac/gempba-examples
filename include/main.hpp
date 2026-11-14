@@ -21,6 +21,7 @@ struct Params {
     int prob;
     bool csv_append;
     std::string filename;
+    int telemetry_port;
 };
 
 inline Params parse(int argc, char *argv[]) {
@@ -76,6 +77,12 @@ inline Params parse(int argc, char *argv[]) {
             .default_value(false)
             .action([](const std::string &value) { return value == "true" || value == "1"; });
 
+    program.add_argument("-telemetry_port", "--telemetry_port")
+            .help("Port rank 0 serves telemetry on")
+            .nargs(1)
+            .default_value(int{9000})
+            .action([](const std::string &value) { return std::stoi(value); });
+
     program.add_argument("-I", "--indir")
             .help("Input directory of the graph to be read")
             .nargs(1)
@@ -98,12 +105,13 @@ inline Params parse(int argc, char *argv[]) {
     int prob = program.get<int>("--prob");
     auto filename = program.get<std::string>("--indir");
     bool csv_append = program.get<bool>("--csv_append");
+    int telemetry_port = program.get<int>("--telemetry_port");
 
 
     spdlog::info("argc: {}, nodes: {}, ntasks_per_node: {}, ntasks_per_socket: {}, cpus_per_task: {}, prob : {}, csv_append :{}, filename: {} \n",
                  argc, nodes, ntasks_per_node, ntasks_per_socket, cpus_per_task, prob, csv_append, filename);
 
-    return Params{job_name, job_id, nodes, ntasks_per_node, ntasks_per_socket, cpus_per_task, prob, csv_append, filename};
+    return Params{job_name, job_id, nodes, ntasks_per_node, ntasks_per_socket, cpus_per_task, prob, csv_append, filename, telemetry_port};
 }
 
 inline std::string create_directory(std::string root) {
