@@ -13,6 +13,8 @@ $CPUS_PER_TASK = 1          # SLURM CPUs per task
 $MAX_DEPTH = 10             # Maximum search depth
 $CSV_APPEND = "true"        # Append to existing CSV file
 $DIR_NAME = "Unused"
+$TELEMETRY_PORT = if ($env:TELEMETRY_PORT) { $env:TELEMETRY_PORT } else { 9000 }  # Rank 0's telemetry port; $env:TELEMETRY_PORT overrides it
+$env:GEMPBA_STOP_TOKEN = if ($env:GEMPBA_STOP_TOKEN) { $env:GEMPBA_STOP_TOKEN } else { 's3cret' }  # The token the dashboard's Stop asks for; $env:GEMPBA_STOP_TOKEN overrides it
 
 # From the following args variable, only CPUS_PER_TASK is used by the project
 # Put arguments in an array — each element is one argument
@@ -25,6 +27,7 @@ $arguments = @(
     "-ntasks_per_socket", "$TASKS_PER_SOCKET"
     "-cpus_per_task", "$CPUS_PER_TASK"
     "-csv", "$CSV_APPEND"
+    "-telemetry_port", "$TELEMETRY_PORT"
     "-I", "$DIR_NAME"
 )
 

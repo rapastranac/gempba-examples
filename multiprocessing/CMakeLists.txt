@@ -14,7 +14,7 @@ foreach (EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     )
 
     target_link_libraries(${TARGET_NAME} PRIVATE
-            gempba::gempba
+            gempba::mpi
             example_libs
             Boost::serialization
             Boost::fiber
@@ -23,6 +23,17 @@ foreach (EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
     set_target_properties(${TARGET_NAME} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
     )
+
+    # Windows: Copy transitively-linked runtime DLLs (libgempba, libgempba_mpi, MSYS2 libgcc/libstdc++/libwinpthread, ...)
+    # next to the exe so the loader finds them. Expands to empty on non-DLL platforms.
+    if (WIN32)
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        $<TARGET_RUNTIME_DLLS:${TARGET_NAME}>
+                        $<TARGET_FILE_DIR:${TARGET_NAME}>
+                COMMAND_EXPAND_LISTS
+        )
+    endif ()
 
     target_compile_options(${TARGET_NAME} PRIVATE
             -Wall -Wextra -Wpedantic

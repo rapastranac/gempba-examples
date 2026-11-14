@@ -14,6 +14,8 @@ CPUS_PER_TASK=1         # SLURM, this is the number of cores per process
 MAX_DEPTH=10            # Maximum search depth
 CSV_APPEND=true         # Append to existing CSV file
 DIR_NAME=Unused
+TELEMETRY_PORT=${TELEMETRY_PORT:-9000}  # Rank 0's telemetry port; TELEMETRY_PORT in the environment overrides it
+export GEMPBA_STOP_TOKEN=${GEMPBA_STOP_TOKEN:-s3cret}  # The token the dashboard's Stop asks for; GEMPBA_STOP_TOKEN in the environment overrides it
 
 # ---------------------- Argument construction -------------------------
 # NOTE:
@@ -29,6 +31,7 @@ args=(
     "-ntasks_per_socket" "$TASKS_PER_SOCKET"
     "-cpus_per_task"     "$CPUS_PER_TASK"
     "-csv"               "$CSV_APPEND"
+    "-telemetry_port"    "$TELEMETRY_PORT"
     "-I"                 "$DIR_NAME"
 )
 

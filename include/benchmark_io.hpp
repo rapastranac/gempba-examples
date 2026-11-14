@@ -21,6 +21,7 @@ struct benchmark_params {
     int max_depth;
     bool csv_append;
     std::string dir_name;
+    int telemetry_port;
 };
 
 inline benchmark_params parse(int argc, char *argv[]) {
@@ -82,6 +83,12 @@ inline benchmark_params parse(int argc, char *argv[]) {
             .default_value(false)
             .action([](const std::string &value) { return value == "true" || value == "1"; });
 
+    program.add_argument("-telemetry_port", "--telemetry_port")
+            .help("Port rank 0 serves telemetry on")
+            .nargs(1)
+            .default_value(int{9000})
+            .action([](const std::string &value) { return std::stoi(value); });
+
     program.add_argument("-I", "--indir")
             .help("Input directory of the graph to be read")
             .nargs(1)
@@ -105,12 +112,13 @@ inline benchmark_params parse(int argc, char *argv[]) {
     int max_depth = program.get<int>("--max_depth");
     auto filename = program.get<std::string>("--indir");
     bool csv_append = program.get<bool>("--csv_append");
+    int telemetry_port = program.get<int>("--telemetry_port");
 
 
     spdlog::info("argc: {}, nodes: {}, ntasks_per_node: {}, ntasks_per_socket: {}, cpus_per_task: {}, prob : {}, csv_append :{}, filename: {} \n",
                  argc, nodes, ntasks_per_node, ntasks_per_socket, cpus_per_task, prob, csv_append, filename);
 
-    return benchmark_params{job_name, job_id, nodes, ntasks_per_node, ntasks_per_socket, cpus_per_task, prob, max_depth, csv_append, filename};
+    return benchmark_params{job_name, job_id, nodes, ntasks_per_node, ntasks_per_socket, cpus_per_task, prob, max_depth, csv_append, filename, telemetry_port};
 }
 
 inline std::string create_directory(std::string root) {

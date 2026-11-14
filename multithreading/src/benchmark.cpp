@@ -11,6 +11,8 @@ using namespace std::chrono;
 
 int run(const benchmark_params &p_params) {
 
+    gempba::telemetry::configure_port(static_cast<std::uint16_t>(p_params.telemetry_port));
+
     // logging in center only
     std::cout << "USING OPTIMIZED ENCODING" << std::endl;
     std::cout << "USING SEMI-CENTRALIZED STRATEGY" << std::endl << std::endl;
